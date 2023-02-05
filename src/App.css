@@ -3,3 +3,8 @@
   height: 100vh;
   overflow: hidden;
 }
+
+.error-warning{
+  width: 100%;
+  text-align: center;
+}

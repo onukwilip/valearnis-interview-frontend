@@ -3,6 +3,9 @@ import { Button, Divider, Form, Icon, Radio } from "semantic-ui-react";
 import Glassmorphism from "../components/Glassmorphism";
 import css from "../styles/quiz/Quiz.module.scss";
 import questions from "../questions.json";
+import useAjaxHook from "use-ajax-request";
+import axios from "axios";
+import { htmlTemplate } from "../utils";
 
 const Questions = ({
   question,
@@ -96,12 +99,45 @@ const Questions = ({
 
 const Finished = ({ result, length, restartQuiz }) => {
   const [parsedResults, setParsedResults] = useState([]);
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const { sendRequest: sendMail } = useAjaxHook({
+    instance: axios,
+    options: {
+      url: `${process.env.REACT_APP_API_DOMAIN}/api/mail`,
+      method: "POST",
+      data: {
+        to: user?.email,
+        subject: "Congratulations! You've completed the GO Quiz",
+        html: htmlTemplate({
+          name: user?.name,
+          passed: parsedResults.filter(
+            (eachResult) => eachResult.isCorrect === true
+          ).length,
+          failed: parsedResults.filter(
+            (eachResult) => eachResult.isCorrect === false
+          ).length,
+          average: (
+            (parsedResults.filter((eachResult) => eachResult.isCorrect === true)
+              .length /
+              length) *
+            100
+          ).toFixed(1),
+        }),
+      },
+    },
+  });
 
   useEffect(() => {
     for (const key in result) {
       setParsedResults((prev) => [...prev, result[key]]);
     }
   }, [result]);
+
+  useEffect(() => {
+    if (parsedResults.length < 1) return;
+    sendMail();
+  }, [parsedResults]);
 
   return (
     <Glassmorphism className={css.finished}>
@@ -149,9 +185,11 @@ const Finished = ({ result, length, restartQuiz }) => {
 };
 
 const StartQuiz = ({ startQuiz }) => {
+  const user = JSON.parse(localStorage.getItem("user"));
+
   return (
     <Glassmorphism className={css["start-quiz"]}>
-      <em>Welcome to GO Quiz</em>
+      <em>{user?.name?.split(" ")[0] || user?.name} welcome to GO Quiz</em>
       <Divider />
       <div className={css.information}>
         You are about to start the quiz. Click the start button below whenever

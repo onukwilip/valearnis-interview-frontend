@@ -1,8 +1,10 @@
 import React from "react";
 import css from "../styles/signup/SIgnup.module.scss";
-import { Button, Form, Icon } from "semantic-ui-react";
+import { Button, Form, Icon, Message } from "semantic-ui-react";
 import { useInput, useForm } from "use-manage-form";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import useAjaxHook from "use-ajax-request";
 
 const SignUp = ({ setWidget }) => {
   const navigate = useNavigate();
@@ -61,12 +63,34 @@ const SignUp = ({ setWidget }) => {
       emailIsValid && passwordIsValid && confirmPasswordIsValid && nameIsValid,
   });
 
+  const {
+    sendRequest: signUp,
+    loading: signingUp,
+    error: signUpError,
+  } = useAjaxHook({
+    instance: axios,
+    options: {
+      url: `${process.env.REACT_APP_API_DOMAIN}/api/signup`,
+      method: "POST",
+      data: {
+        name,
+        email,
+        password,
+      },
+    },
+  });
+
+  const onSignupSuccess = (res) => {
+    reset();
+    localStorage.setItem("user", JSON.stringify(res.data));
+    navigate("/quiz", { replace: true });
+  };
+
   const onSubmit = async () => {
     if (!formIsValid) return executeBlurHandlers();
 
     console.log("SUBMITTED", { email, password });
-    reset();
-    navigate("/quiz", { replace: true });
+    signUp(onSignupSuccess);
   };
 
   const toogle = () => {
@@ -148,14 +172,24 @@ const SignUp = ({ setWidget }) => {
           }
         />
         <div className={css.actions}>
-          <Button animated="fade">
-            <Button.Content visible>Register</Button.Content>
+          <Button animated="fade" disabled={signingUp}>
+            <Button.Content visible>
+              {signingUp ? "Loading..." : "Signup"}
+            </Button.Content>
             <Button.Content hidden>
               <Icon name="arrow right" />
             </Button.Content>
           </Button>
         </div>
       </Form>
+
+      {signUpError && (
+        <Message negative className={"error-warning"}>
+          <Message.Header>
+            {signUpError?.response?.data?.message}
+          </Message.Header>
+        </Message>
+      )}
 
       <div className={css.info}>
         Don't have an account?{" "}

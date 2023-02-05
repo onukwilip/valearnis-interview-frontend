@@ -1,6 +1,8 @@
+import axios from "axios";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Form, Icon } from "semantic-ui-react";
+import { Button, Form, Icon, Message } from "semantic-ui-react";
+import useAjaxHook from "use-ajax-request";
 import { useInput, useForm } from "use-manage-form";
 import css from "../styles/login/Login.module.scss";
 
@@ -38,12 +40,33 @@ const Login = ({ setWidget }) => {
     setWidget("signup");
   };
 
+  const {
+    sendRequest: login,
+    loading: loggingIn,
+    error: loginError,
+  } = useAjaxHook({
+    instance: axios,
+    options: {
+      url: `${process.env.REACT_APP_API_DOMAIN}/api/login`,
+      method: "POST",
+      data: {
+        email,
+        password,
+      },
+    },
+  });
+
+  const onLoginSuccess = (res) => {
+    reset();
+    localStorage.setItem("user", JSON.stringify(res.data));
+    navigate("/quiz", { replace: true });
+  };
+
   const onSubmit = async () => {
     if (!formIsValid) return executeBlurHandlers();
 
     console.log("SUBMITTED", { email, password });
-    reset();
-    navigate("/quiz", { replace: true });
+    login(onLoginSuccess);
   };
 
   return (
@@ -85,14 +108,22 @@ const Login = ({ setWidget }) => {
           }
         />
         <div className={css.actions}>
-          <Button animated="fade">
-            <Button.Content visible>Login</Button.Content>
+          <Button animated="fade" disabled={loggingIn}>
+            <Button.Content visible>
+              {loggingIn ? "Loading..." : "Login"}
+            </Button.Content>
             <Button.Content hidden>
               <Icon name="arrow right" />
             </Button.Content>
           </Button>
         </div>
       </Form>
+
+      {loginError && (
+        <Message negative className={"error-warning"}>
+          <Message.Header>{loginError?.response?.data?.message}</Message.Header>
+        </Message>
+      )}
 
       <div className={css.info}>
         Don't have an account?{" "}
