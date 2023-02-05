@@ -6,6 +6,7 @@ import questions from "../questions.json";
 import useAjaxHook from "use-ajax-request";
 import axios from "axios";
 import { htmlTemplate } from "../utils";
+import { Navigate } from "react-router-dom";
 
 const Questions = ({
   question,
@@ -208,6 +209,7 @@ const StartQuiz = ({ startQuiz }) => {
 };
 
 const Quiz = () => {
+  const user = JSON.parse(localStorage.getItem("user"));
   const [quizState, setQuizState] = useState("start");
   const [currentQuestion, setCurrentQuestion] = useState(-1);
   const [answers, setAnswers] = useState({});
@@ -221,6 +223,8 @@ const Quiz = () => {
     setQuizState("start");
     setAnswers({});
   };
+
+  if (!user) return <Navigate to="/" replace={true} />;
 
   return (
     <div className={css.quiz}>
